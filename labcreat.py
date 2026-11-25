@@ -1,6 +1,7 @@
 import pandas as pd
 
 def filter_large_csv_by_stay_ids(input_file, output_file, key_col, chunksize=100_000):
+    # 52024 is whole blood, 52546 are all nan
     valid_ids = [50912, 52024, 52546]
 
     reader = pd.read_csv(input_file, chunksize=chunksize)
@@ -19,55 +20,26 @@ def filter_large_csv_by_stay_ids(input_file, output_file, key_col, chunksize=100
 
         print(f"✔ 已处理第 {i+1} 块，保留 {len(filtered_chunk)} 行")
 
-    print(f"🎉 筛选完成，最终保留 {total_rows_kept} 行，保存至 {output_file}")
-
 def remove_columns_from_csv(data_file, output_file):
 
     df = pd.read_csv(data_file)
 
     df = df[["subject_id", "itemid", "charttime", "value"]]
+    df.rename(columns={'itemid': 'wholeblood'}, inplace=True)
+
+    mapping = {50912: 0, 52024: 1, 52546: 0}
+    df["wholeblood"] = df["wholeblood"].map(mapping).fillna(df["wholeblood"])
+
+    df['value'] = pd.to_numeric(df['value'], errors='coerce')
+    df = df.dropna(subset=['value'])
+
+    mask = (df['value'] > 100) | (df['value'] < 0)
+    df = df[~mask]
 
     df.to_csv(output_file, index=False)
-    print(f"输出文件保存至：{output_file}")
-
-def drop_rows_with_empty_column(csv_file, column, output_file=None, remove_non_numeric=False):
-    df = pd.read_csv(csv_file)
-    initial_rows = len(df)
-    
-    # 删除缺失值
-    df_clean = df.dropna(subset=[column])
-    
-    # 如果启用删除非数字行
-    if remove_non_numeric:
-        # 尝试将列转换为数值，无法转换的会变成NaN
-        df_clean[column] = pd.to_numeric(df_clean[column], errors='coerce')
-        # 删除新产生的NaN行（即原来的非数字行）
-        df_clean = df_clean.dropna(subset=[column])
-    
-    cleaned_rows = len(df_clean)
-
-    # 判断是否需要写入
-    if cleaned_rows == initial_rows and (output_file is None or output_file == csv_file):
-        print(f"未发现需要删除的行，无需写入文件。")
-        return df_clean
-
-    # 写入结果
-    output_path = output_file if output_file else csv_file
-    df_clean.to_csv(output_path, index=False)
-    
-    # 统计信息
-    missing_removed = initial_rows - len(df.dropna(subset=[column]))
-    non_numeric_removed = len(df.dropna(subset=[column])) - cleaned_rows if remove_non_numeric else 0
-    
-    if remove_non_numeric:
-        print(f"已删除 {missing_removed} 行 {column} 为空的数据和 {non_numeric_removed} 行非数字数据，结果保存至 {output_path}")
-    else:
-        print(f"已删除 {missing_removed} 行 {column} 为空的数据，结果保存至 {output_path}")
-    
-    return df_clean
+    print(f"Results saved to: {output_file}")
 
 if __name__ == "__main__":
 
     #filter_large_csv_by_stay_ids('../../hosp/labevents.csv', './labcreat.csv', 'itemid')
     remove_columns_from_csv('./labcreat.csv', './labcreat.csv')
-    drop_rows_with_empty_column('./labcreat.csv', 'value', './labcreat.csv', True)

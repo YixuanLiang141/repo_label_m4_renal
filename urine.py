@@ -215,9 +215,9 @@ def fill_hourly_urine(
 
 if __name__ == "__main__":
 
-    filter_large_csv_by_stay_ids('../../icu/outputevents.csv', './urine.csv', 'itemid')
-    remove_columns_from_csv('./urine.csv', './urine.csv')
-    process_gu_irrigation('./urine.csv', './urine.csv')
-    sort_csv_by_two_col('./urine.csv', './urine.csv', 'subject_id', 'charttime')
+    #filter_large_csv_by_stay_ids('../../icu/outputevents.csv', './urine.csv', 'itemid')
+    #remove_columns_from_csv('./urine.csv', './urine.csv')
+    #process_gu_irrigation('./urine.csv', './urine.csv')
+    #sort_csv_by_two_col('./urine.csv', './urine.csv', 'subject_id', 'charttime')
     # Copy hourly_urine.csv from repo_label_m4_public
-    fill_hourly_urine('./hourly_urine.csv', './urine.csv', './hourly_urine.csv')
+    fill_hourly_urine('./icu_hourly_for_urine.csv', './urine.csv', './hourly_urine.csv')

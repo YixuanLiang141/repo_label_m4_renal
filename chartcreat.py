@@ -1,6 +1,7 @@
 import pandas as pd
 
 def filter_large_csv_by_stay_ids(input_file, output_file, key_col, chunksize=100_000):
+    # 229761 is whole blood
     valid_ids = [220615, 229761]
 
     reader = pd.read_csv(input_file, chunksize=chunksize)
@@ -19,25 +20,22 @@ def filter_large_csv_by_stay_ids(input_file, output_file, key_col, chunksize=100
 
         print(f"✔ 已处理第 {i+1} 块，保留 {len(filtered_chunk)} 行")
 
-    print(f"🎉 筛选完成，最终保留 {total_rows_kept} 行，保存至 {output_file}")
-
-def delete_rows_by_values(input_file, output_file):
+def process_columns_values(input_file, output_file):
     df = pd.read_csv(input_file)
-    mask = (df['value'] > 100) & (df['valueuom'].isna())
-    df = df[~mask]
-    df.to_csv(output_file, index=False)
-
-def remove_columns_from_csv(data_file, output_file):
-
-    df = pd.read_csv(data_file)
 
     df = df[["subject_id", "charttime", "itemid", "value"]]
+    df.rename(columns={'itemid': 'wholeblood'}, inplace=True)
+
+    mapping = {220615: 0, 229761: 1}
+    df["wholeblood"] = df["wholeblood"].map(mapping).fillna(df["wholeblood"])
+
+    mask = (df['value'] > 100) | (df['value'] < 0)
+    df = df[~mask]
 
     df.to_csv(output_file, index=False)
-    print(f"输出文件保存至：{output_file}")
-
+    print(f"Result saved to: {output_file}")
+    
 if __name__ == "__main__":
 
     #filter_large_csv_by_stay_ids('../../icu/chartevents.csv', './chartcreat.csv', 'itemid')
-    #delete_rows_by_values('./chartcreat.csv', './chartcreat.csv')
-    remove_columns_from_csv('./chartcreat.csv', './chartcreat.csv')
+    process_columns_values('./chartcreat.csv', './chartcreat.csv')
